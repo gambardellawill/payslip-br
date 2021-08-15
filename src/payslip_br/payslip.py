@@ -8,31 +8,36 @@ class InvalidBarcodeException(Exception):
         self.value = value
 
     def __str__(self):
-        return "" \
-               ""
+        return "Barcode is invalid. \n" \
+               "Please check whether the input is correct \n" \
+               "Input: {0}".format(self.value)
 
+
+class InvalidTypeableLineException(Exception):
+    def __init__(self, value):
+        self.value = value
+
+    def __str__(self):
+        return "Typeable line is invalid. \n" \
+               "Please check whether the input is correct \n" \
+               "Input: {0}".format(self.value)
 
 
 def dac_string(length,elements):
-    """
-    Generates the string of numbers required to calculate the DAC (self-check digit)
+    """ Generates the string of numbers required to calculate the DAC (self-check digit)
     based on an array of pre-determined allowed objects.
 
-    Parameters
-    ----------
-    length : int
-        Length of the barcode string minus the DAC digit.
-    elements : list
-        List of allowed objects for each modulo calculation.
+    :param length: Length of the barcode string minus the DAC digit.
+    :type length: int
+    :param elements: List of allowed objects for each modulo calculation.
+                     Modulo 10: [2,1]
+                     Modulo 11: [2,3,4,5,6,7,8,9]
+    :type elements: list
         
-        Modulo 10: [2,1]
-        Modulo 11: [2,3,4,5,6,7,8,9]
-
-    Returns
-    -------
-    verification_string : str
-        String of numbers for the DAC calculation.
+    :return: String of numbers for the DAC calculation.
+    :rtype: str
     """
+
     complete = length
     cursor = 0
     verification_string = ''
@@ -49,21 +54,16 @@ def dac_string(length,elements):
 
 
 def dac(barcode, modulo):
-    """
-    Calculates the DAC, or self-check digit, for the payslip barcode according to FEBRABAN
+    """ Calculates the DAC, or self-check digit, for the payslip barcode according to FEBRABAN
     specifications.
 
-    Parameters
-    ----------
-    barcode : str
-        A
-    modulo : int
-        A
-
-    Returns
-    -------
-    int
-        The DAC self-check digit.
+    :param barcode: A string containing the barcode
+    :type barcode: str
+    :param modulo: The modulo operation to be performed (either 10 or 11).
+    :type modulo: int
+        
+    :return: The DAC self-check digit.
+    :rtype: int
     """
     
     result = 0
@@ -104,20 +104,18 @@ def dac(barcode, modulo):
 
 
 def to_barcode(typeable_line):
-    """
-    Converts the typeable line or numeric representation of a payslip's barcode into
+    """ Converts the typeable line or numeric representation of a payslip's barcode into
     the working barcode itself.
 
-    Parameters
-    ----------
+    :param typeable_line: A valid typeable line, comprised of either a 47-digit or 48-digit long string.
+    :type typeable_line: str
+        
+    :return: Returns a valid barcode from the provided typeable line.
+    :rtype: str
 
-    Returns
-    -------
-
-    Raises
-    ------
-
+    :raises InvalidTypeableLineException: Invalid typeable line. Check input data.
     """
+
     if len(typeable_line) == 47:
         return typeable_line[0:4] \
             + typeable_line[32] \
@@ -133,25 +131,21 @@ def to_barcode(typeable_line):
     elif len(typeable_line) == 44:
         return typeable_line
     else:
-        raise Exception("Invalid typeable line.")
+        raise InvalidTypeableLineException(typeable_line)
 
 
 def to_typeable_line(barcode):
-    """
-    Converts the payslip's barcode into the typeable line, a numeric representation
+    """ Converts the payslip's barcode into the typeable line, a numeric representation
     of such barcode that can be inserted manually by an operator.
 
-    Parameters
-    ----------
-    barcode : str
-        A valid payslip barcode
-
-    Returns
-    -------
-    str
-        A valid typeable line according to the type of barcode (47-digit line for regular documents,
+    :param barcode: A valid payslip barcode
+    :type barcode: str
+    
+    :rtype: str
+    :return: A valid typeable line according to the type of barcode (47-digit line for regular documents,
         or 48-digit line for utility bills or tax-related obligations).
     """
+
     if barcode[0] == "8":
         return barcode[0:11] \
             + str(dac(barcode[0:11], 11)) \
@@ -174,20 +168,15 @@ def to_typeable_line(barcode):
 
 
 def is_valid(typeable_string):
-    """
-    Validates a barcode or a typeable line.
+    """ Validates a barcode or a typeable line.
 
-    Parameters
-    ----------
-    typeable_string : str
-        A string representing a barcode or a typeable line to be checked
+    :param typeable_string: A string representing a barcode or a typeable line to be checked
+    :type typeable_string: str
 
-    Returns
-    -------
-    bool
-        true, if the input string is valid
-        false, otherwise
+    :return: true, if the input string is valid. false, otherwise.
+    :rtype: bool 
     """
+
     if len(typeable_string) not in [44,47,48]:
         return False
     
@@ -205,10 +194,29 @@ def is_valid(typeable_string):
 
 
 def due_date(no_of_days):
+    """Returns the date when the payment will be due.
+
+    :param no_of_days: aa
+    :type no_of_days: int
+
+    :rtype: date
+    :return: due date
+    """
     return date(1997, 10, 7) + timedelta(days=no_of_days)
 
 
 def decode(typeable_string):
+    """ Decodes a string associated with a payslip barcode or its typeable line.
+
+    :param typeable_string: 
+    :type typeable_string: str
+
+    :return: A dictionary of data fields contained in the payslip's barcode.
+    :rtype: dict
+
+    :raises InvalidBarcodeException: Invalid barcode
+    """
+
     if is_valid(typeable_string):
         payslip = {}
         barcode = to_barcode(typeable_string)
@@ -234,10 +242,4 @@ def decode(typeable_string):
         
         return payslip
     else:
-        raise Exception("Cannot decode data. Barcode is invalid.")
-
-
-if __name__ == "__main__":
-    # 846100000005659900641005011014371105921088409773
-    typeable_string = input("Linha digitável: ")
-    print(decode(re.sub(r"[^0-9]",'',typeable_string)))
+        raise InvalidBarcodeException(typeable_string)

@@ -4,3 +4,6 @@ token
 .venv/
 src/*.egg-info
 dist/
+__pycache__/
+*.pyc
+docs/
