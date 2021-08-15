@@ -1,0 +1,6 @@
+token
+*.pdf
+.pypirc
+.venv/
+src/*.egg-info
+dist/
